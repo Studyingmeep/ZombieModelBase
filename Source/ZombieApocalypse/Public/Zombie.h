@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h" 
 #include "Zombie.generated.h"
 
+class ASimGameController;
 class AHuman;
 
 UCLASS()
@@ -30,10 +31,9 @@ protected:
 
 private:
 	
-	
+	TWeakObjectPtr<ASimGameController> GameController;
 	
 	// Current human being chased
-	UPROPERTY()
 	TWeakObjectPtr<AHuman> CurrentTarget;
 
 	// Search radius for detecting humans
@@ -54,17 +54,14 @@ public:
 	// Called on spawn
 	void SetInitialZombie();
 	
+	void SetGameController(ASimGameController* InGameController);
+	
 private:
 	void ScanForHumans();
-	AHuman* FindClosestHuman(const TArray<AActor*>& Humans) const;
+	AHuman* FindClosestHuman(TArray<AActor*>& Humans) const;
+	AHuman* FindClosestHuman(TArray<AHuman*>& Humans) const;
 	void MoveTowardTarget();
-
-	UFUNCTION()
-	void OnOverlapBegin(UPrimitiveComponent* Overlapped,
-	                    AActor* OtherActor,
-	                    UPrimitiveComponent* OtherComp,
-	                    int32 BodyIndex,
-	                    bool bFromSweep,
-	                    const FHitResult& SweepResult);
+	
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
 };

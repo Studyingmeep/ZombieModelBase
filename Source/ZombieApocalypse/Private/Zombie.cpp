@@ -1,7 +1,9 @@
 // Copyright University of Inland Norway
 
 #include "ZombieApocalypse/Public/Zombie.h"
-#include "Human.h"
+
+#include "SimGameController.h"
+#include "ZombieApocalypse/Public/Human.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -12,14 +14,23 @@ AZombie::AZombie()
 	
 	CollisionComponent = GetCapsuleComponent();
 	CollisionComponent->SetGenerateOverlapEvents(true);
-	
-	CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &AZombie::OnOverlapBegin);
 }
 
 // Called when the game starts or when spawned
 void AZombie::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASimGameController::StaticClass(), FoundActors);
+	if (FoundActors.Num() > 0)
+	{
+		ASimGameController* CustomActor = Cast<ASimGameController>(FoundActors[0]);
+		if (CustomActor)
+		{
+			GameController = CustomActor;
+		}
+	}
 	
 	// Zombies start idle – scanning
 	CurrentTarget = nullptr;
@@ -42,26 +53,43 @@ void AZombie::Tick(float DeltaTime)
 	{
 		MoveTowardTarget();
 	}
+	else
+	{
+		ScanForHumans();
+	}
 }
 
 void AZombie::SetInitialZombie()
 {
 	// Called when spawned – this ensures zombies always begin scanning
 	CurrentTarget = nullptr;
+	
+	if (GetWorldTimerManager().IsTimerActive( ScanTimer ))
+	{
+		GetWorldTimerManager().ClearTimer( ScanTimer );
+	}
+	// Scan for humans every ScanInterval seconds
+	GetWorldTimerManager().SetTimer(
+		ScanTimer, this,
+		&AZombie::ScanForHumans,
+		ScanInterval, true
+	);
+}
+
+void AZombie::SetGameController(ASimGameController* InGameController)
+{
+	GameController = InGameController;
 }
 
 void AZombie::ScanForHumans()
 {
 	if (CurrentTarget.IsValid()) return;  // Already chasing someone
-
-	TArray<AActor*> FoundHumans;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AHuman::StaticClass(), FoundHumans);
-
-	if (FoundHumans.Num() == 0) return;
+	
+	if (GameController->HumanActors.Num() == 0) return;
 
 	// Find the closest human within SearchRadius
 
-	if (AHuman* Closest = FindClosestHuman(FoundHumans))
+	if (AHuman* Closest = FindClosestHuman(GameController->HumanActors))
 	{
 		CurrentTarget = Closest;
 		Closest->bIsTargeted = true;  // Prevents zombies from stacking the same target
@@ -73,7 +101,7 @@ void AZombie::ScanForHumans()
 	}
 }
 
-AHuman* AZombie::FindClosestHuman(const TArray<AActor*>& Humans) const
+AHuman* AZombie::FindClosestHuman(TArray<AActor*>& Humans) const
 {
 	AHuman* Result = nullptr;
 	float BestDist = FLT_MAX;
@@ -97,14 +125,37 @@ AHuman* AZombie::FindClosestHuman(const TArray<AActor*>& Humans) const
 	return Result;
 }
 
+AHuman* AZombie::FindClosestHuman(TArray<AHuman*>& Humans) const
+{
+	AHuman* Result = nullptr;
+	float BestDist = FLT_MAX;
+
+	FVector MyPos = GetActorLocation();
+
+	for (AActor* A : Humans)
+	{
+		AHuman* H = Cast<AHuman>(A);
+		if (!H || !H->IsAlive() || H->bIsTargeted || H->bIsBitten) continue;
+
+		float Dist = FVector::Distance(MyPos, H->GetActorLocation());
+
+		if (Dist < SearchRadius && Dist < BestDist)
+		{
+			BestDist = Dist;
+			Result = H;
+		}
+	}
+
+	return Result;
+}
+
 void AZombie::MoveTowardTarget()
 {
 	if (!CurrentTarget.IsValid() || !CurrentTarget->IsAlive())
 	{
 		if (CurrentTarget.IsValid())
-			CurrentTarget->bIsTargeted = false;
-
-		CurrentTarget = nullptr;
+			CurrentTarget->bIsTargeted = true;
+		
 		return;
 	}
 
@@ -115,22 +166,19 @@ void AZombie::MoveTowardTarget()
 	AddMovementInput(Direction, ZombieSpeed);
 }
 
-void AZombie::OnOverlapBegin(UPrimitiveComponent* Overlapped, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	int32 BodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AZombie::NotifyActorBeginOverlap(AActor* OtherActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Zombie %s is overlapping with %s"), *GetName(), *Overlapped->GetOwner()->GetName());
-	
-	if (Overlapped->GetOwner() == Cast<AHuman>(OtherActor))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Zombie %s bites %s"), *GetName(), *OtherActor->GetName());
-		AHuman* Human = Cast<AHuman>(OtherActor);
-		if (!Human->IsAlive()) return;
+    Super::NotifyActorBeginOverlap(OtherActor);
 
-		// Bite human!
-		Human->GetBitten();
-
-		// Clear the target and find a new one on the next scan
-		CurrentTarget = nullptr;
-	}
+    if (AHuman* Human = Cast<AHuman>(OtherActor))
+    {
+    	UE_LOG(LogTemp, Warning, TEXT("Zombie %s bites human %s!"), *GetName(), *Human->GetName());
+	    if (!Human->IsAlive()) return;
+        
+    	// Clear the target and find a new one on the next scan
+    	CurrentTarget = nullptr;
+    	;
+    	FindClosestHuman(GameController->HumanActors);
+    }
 }
 
