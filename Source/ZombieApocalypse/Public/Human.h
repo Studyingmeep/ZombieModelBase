@@ -32,6 +32,7 @@ protected:
 
 	bool bAlive = true;
 	FTimerHandle InfectionTimer;
+	int DaysUntilZombie = 15;
 	
 public:	
 
@@ -46,6 +47,7 @@ public:
 
 	bool IsAlive() const { return bAlive; }
 	void GetBitten();
+	void ReduceDaysLeftUntilZombie();
 	void TurnIntoZombie();
 	void SetTargeted(bool bTarget);
 

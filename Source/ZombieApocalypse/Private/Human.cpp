@@ -12,6 +12,8 @@ AHuman::AHuman()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
+	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+	
 	ActorCapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
 	ActorCapsuleComponent->SetupAttachment(RootComponent);
 	ActorCapsuleComponent->SetGenerateOverlapEvents(true);
@@ -40,13 +42,29 @@ void AHuman::BeginPlay()
 
 void AHuman::GetBitten()
 {
+	if (bIsBitten)
+	{
+		return;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Human %s is bitten!"), *GetName());
 	bIsTargeted = false;
 	bIsBitten = true;
 	ActorCapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TargetArrow->SetVisibility(false);
 	TargetArrow->SetHiddenInGame(true);
 	
-	GetWorldTimerManager().SetTimer(InfectionTimer, this,  &AHuman::TurnIntoZombie, 15.f, false);
+	GetWorldTimerManager().SetTimer(InfectionTimer, this,  &AHuman::ReduceDaysLeftUntilZombie, 1.f / GameController->CurrentGameSpeed, true);
+}
+
+void AHuman::ReduceDaysLeftUntilZombie()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Human %s is infected for %i days left!"), *GetName(), DaysUntilZombie);
+	DaysUntilZombie--;
+	if (DaysUntilZombie == 0 || DaysUntilZombie < 0)
+	{
+		TurnIntoZombie();
+	}
 }
 
 void AHuman::TurnIntoZombie()
@@ -58,23 +76,18 @@ void AHuman::TurnIntoZombie()
 	Destroy();
 }
 
-void AHuman::SetTargeted(const bool bTarget)
-{
-	if (bIsBitten) return;
-	bIsTargeted = bTarget;
-	TargetArrow->SetVisibility(bIsTargeted);
-	TargetArrow->SetHiddenInGame(false);
-}
-
 void AHuman::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 
-	if (bIsBitten) return;
-	
-	if (OtherActor == Cast<AZombie>(OtherActor))
+	if (Cast<AHuman>(OtherActor))
 	{
-		GetBitten();
+		return;
 	}
+	UE_LOG(LogTemp, Warning, TEXT("Human %s is overlapping with %s inside AHuman:ActorOverlap!"), *GetName(), *OtherActor->GetName());
+	
+	if (bIsBitten) return;
+	UE_LOG(LogTemp, Warning, TEXT("Human %s is bitten by %s inside AHuman:ActorOverlap!"), *GetName(), *OtherActor->GetName());
+	GetBitten();
 }
 
