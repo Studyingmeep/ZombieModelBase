@@ -28,6 +28,7 @@ protected:
 	virtual void BeginPlay() override;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	void UpdateOldTargetPosition();
 
 private:
 	
@@ -35,6 +36,9 @@ private:
 	
 	// Current human being chased
 	TWeakObjectPtr<AHuman> CurrentTarget;
+	
+	FTimerHandle OldPositionTimerHandle;
+	FVector PreviousPosition3SecondsAgo;
 
 	// Search radius for detecting humans
 	float SearchRadius = 300.f;

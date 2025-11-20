@@ -14,12 +14,16 @@ AZombie::AZombie()
 	
 	CollisionComponent = GetCapsuleComponent();
 	CollisionComponent->SetGenerateOverlapEvents(true);
+	
+	
 }
 
 // Called when the game starts or when spawned
 void AZombie::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	PreviousPosition3SecondsAgo = GetActorLocation();
 	
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASimGameController::StaticClass(), FoundActors);
@@ -42,6 +46,7 @@ void AZombie::BeginPlay()
 		ScanInterval, true
 	);
 	
+	GetWorldTimerManager().SetTimer(OldPositionTimerHandle, this, &AZombie::UpdateOldTargetPosition, 3.f, true);
 }
 
 // Called every frame
@@ -57,6 +62,19 @@ void AZombie::Tick(float DeltaTime)
 	{
 		ScanForHumans();
 	}
+	
+	if (CurrentTarget.Get())
+	{
+		if (CurrentTarget.Get()->GetActorLocation() == PreviousPosition3SecondsAgo)
+		{
+			CurrentTarget = nullptr;
+		}
+	}
+}
+
+void AZombie::UpdateOldTargetPosition()
+{
+	PreviousPosition3SecondsAgo = GetActorLocation();
 }
 
 void AZombie::SetInitialZombie()
@@ -83,21 +101,26 @@ void AZombie::SetGameController(ASimGameController* InGameController)
 
 void AZombie::ScanForHumans()
 {
-	if (CurrentTarget.IsValid()) return;  // Already chasing someone
-	
-	if (GameController->HumanActors.Num() == 0) return;
+	if (GameController->HumanActors.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No humans in ScanForHumans in Zombie.cpp! Game over?"));
+		return;
+	}
 
 	// Find the closest human within SearchRadius
 
+	
 	if (AHuman* Closest = FindClosestHuman(GameController->HumanActors))
 	{
 		CurrentTarget = Closest;
 		Closest->bIsTargeted = true;  // Prevents zombies from stacking the same target
+		MoveTowardTarget();
 	}
 	else
 	{
 		// Expand the search radius until max
 		SearchRadius = FMath::Min(SearchRadius + 200.f, MaxSearchRadius);
+		// TODO: Use this SearchRadius to actually search for zombies with.
 	}
 }
 
@@ -153,11 +176,11 @@ void AZombie::MoveTowardTarget()
 {
 	if (!CurrentTarget.IsValid() || !CurrentTarget->IsAlive())
 	{
-		if (CurrentTarget.IsValid())
-			CurrentTarget->bIsTargeted = true;
-		
+		CurrentTarget = nullptr;
 		return;
 	}
+	
+	CurrentTarget->bIsTargeted = true;
 
 	FVector Direction = (CurrentTarget->GetActorLocation() - GetActorLocation());
 	Direction.Z = 0;
