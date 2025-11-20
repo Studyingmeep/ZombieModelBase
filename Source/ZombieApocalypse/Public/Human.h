@@ -6,6 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "Human.generated.h"
 
+class UArrowComponent;
+class UCapsuleComponent;
+class ASimGameController;
+
 UCLASS()
 class ZOMBIEAPOCALYPSE_API AHuman : public AActor
 {
@@ -16,19 +20,34 @@ public:
 	AHuman();
 
 protected:
+	
+	UPROPERTY()
+	ASimGameController* GameController;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UCapsuleComponent* ActorCapsuleComponent;
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	bool bAlive = true;
+	FTimerHandle InfectionTimer;
+	
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TObjectPtr<UArrowComponent> TargetArrow;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UStaticMeshComponent> TargetMesh;
+	bool bIsBitten = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bIsTargeted = false;
 
-	UFUNCTION(BlueprintCallable)
+	bool IsAlive() const { return bAlive; }
+	void GetBitten();
+	void TurnIntoZombie();
 	void SetTargeted(bool bTarget);
+
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 };
