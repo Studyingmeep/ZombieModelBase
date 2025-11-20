@@ -60,8 +60,9 @@ void ASimGameController::SpawnEntityAt(const FVector Position, const bool bSpawn
 	}
 	else if (!bSpawnHuman && ZombieClass)
 	{
-		if (AZombie* NewZombie = GetWorld()->SpawnActor<AZombie>(ZombieClass, Position, FRotator::ZeroRotator))
+		if (AZombie* NewZombie = GetWorld()->SpawnActor<AZombie>(ZombieClass, Position + FVector(0, 0, 100), FRotator::ZeroRotator))
 		{
+			NewZombie->SetGameController(this);
 			NewZombie->SetInitialZombie();
 			Zombies++;
 			ZombieActors.Add(NewZombie);
@@ -123,6 +124,7 @@ void ASimGameController::NotifyHumanConverted(AHuman* HumanVictim)
 {
 	if (HumanActors.Contains(HumanVictim))
 	{
+		Susceptible--;
 		HumanActors.Remove(HumanVictim);
 	}
 

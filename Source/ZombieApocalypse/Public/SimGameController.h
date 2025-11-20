@@ -82,7 +82,7 @@ public:
 	
 	/// How many days (steps) to run total 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Simulation")
-	int32 MaxDays = 120; // 2 mins at 1 day/sec
+	int32 MaxDays = 1000; // 2 mins at 1 day/sec
 	
 	/// Susceptible (Humans) - choose a number that has a clean sqrt!
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Simulation Variables")
