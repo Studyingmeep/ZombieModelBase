@@ -4,15 +4,26 @@
 #include "SimulationHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "SimulationController.h"
+#include "Public/SimGameController.h"
 
 void ASimulationHUD::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	/// Cast to see if we can find SimulationController first, and then try cast and find SimGameController.
     SimulationController = Cast<ASimulationController>(UGameplayStatics::GetActorOfClass(GetWorld(), ASimulationController::StaticClass()));
 
     if (!SimulationController.IsValid())
     {
-        UE_LOG(LogTemp, Warning, TEXT("SimulationHUD: SimulationController not found!"));
+    	SimGameController = Cast<ASimGameController>(UGameplayStatics::GetActorOfClass(GetWorld(), ASimGameController::StaticClass()));
+	    if (!SimGameController.IsValid())
+	    {
+		    UE_LOG(LogTemp, Warning, TEXT("SimulationHUD: Neither SimulationController nor SimGameController found!"));
+	    }
+	    else
+	    {
+	    	UE_LOG(LogTemp, Verbose, TEXT("SimulationHUD: ASimGameController found!"));
+	    }
     }
 }
 
@@ -20,9 +31,9 @@ void ASimulationHUD::DrawHUD()
 {
 	Super::DrawHUD();
 	
-	if (!SimulationController.IsValid())
+	if (!SimulationController.IsValid() && !SimGameController.IsValid())
 	{	
-		UE_LOG(LogTemp, Warning, TEXT("SimulationHUD: SimulationController not found!"));
+		UE_LOG(LogTemp, Warning, TEXT("SimulationHUD: Neither SimulationController nor SimGameController found!"));
 		return;
 	}
 
@@ -37,12 +48,12 @@ void ASimulationHUD::DrawHUD()
         //SimulationController->Zombies);
 
     //DrawText(message, textColor, screenPosition.X, screenPosition.Y, nullptr, textScale, true);
-
+	
     // Multiple lines for better organization
-    const FString StepMessage = FString::Printf(TEXT("Day: %d"), SimulationController->TimeStepsFinished);
-    const FString HumansMessage = FString::Printf(TEXT("Humans: %d"), static_cast<int>(SimulationController->Susceptible));
-    const FString BittenMessage = FString::Printf(TEXT("Bitten: %d"), static_cast<int>(SimulationController->Bitten));
-    const FString ZombiesMessage = FString::Printf(TEXT("Zombies: %d"), static_cast<int>(SimulationController->Zombies));
+    const FString StepMessage = FString::Printf(TEXT("Day: %d"), SimulationController.IsValid() ? SimulationController->TimeStepsFinished : SimGameController->CurrentDay);
+    const FString HumansMessage = FString::Printf(TEXT("Humans: %d"), SimulationController.IsValid() ? static_cast<int>(SimulationController->Susceptible) : static_cast<int>(SimGameController->Susceptible));
+    const FString BittenMessage = FString::Printf(TEXT("Bitten: %d"), SimulationController.IsValid() ? static_cast<int>(SimulationController->Bitten) : static_cast<int>(SimGameController->Bitten));
+    const FString ZombiesMessage = FString::Printf(TEXT("Zombies: %d"), SimulationController.IsValid() ? static_cast<int>(SimulationController->Zombies) : static_cast<int>(SimGameController->Zombies));
 
     DrawText(StepMessage, TextColor, ScreenPosition.X, ScreenPosition.Y, nullptr, TextScale, true);
     DrawText(HumansMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 15.0f, nullptr, TextScale, true);

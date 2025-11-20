@@ -6,6 +6,7 @@
 #include "GameFramework/HUD.h"
 #include "SimulationHUD.generated.h"
 
+class ASimGameController;
 class ASimulationController;
 
 /**
@@ -24,6 +25,6 @@ public:
 private:
 	
 	TWeakObjectPtr<ASimulationController> SimulationController;
-
+	TWeakObjectPtr<ASimGameController> SimGameController;;
 
 };
