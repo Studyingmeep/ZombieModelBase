@@ -65,6 +65,39 @@ void ASimGameController::SpawnEntityAt(const FVector Position, const bool bSpawn
 	}
 }
 
+void ASimGameController::PauseGame()
+{
+	UGameplayStatics::SetGamePaused(this, true);
+}
+
+void ASimGameController::ResumeGame()
+{
+	UGameplayStatics::SetGamePaused(this, false);
+}
+
+void ASimGameController::SetGameSpeed(float Multiplier)
+{
+	CurrentGameSpeed = Multiplier;
+	SecondsPerDay = 1.0f / Multiplier;
+
+	// Restart the timer with the new interval
+	if (GetWorldTimerManager().IsTimerActive(DayTimer))
+	{
+		GetWorldTimerManager().ClearTimer(DayTimer);
+	}
+
+	GetWorldTimerManager().SetTimer(
+		DayTimer,
+		this,
+		&ASimGameController::AdvanceDay,
+		SecondsPerDay,
+		true
+	);
+	
+	// ⭐ The magic line — speeds up animations, movement, everything
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), CurrentGameSpeed);
+}
+
 void ASimGameController::AdvanceDay()
 {
 	if (CurrentDay >= MaxDays)
@@ -99,4 +132,6 @@ void ASimGameController::StopGame()
 	{
 		GetWorldTimerManager().ClearTimer(DayTimer);
 	}
+	
+	PauseGame();
 }

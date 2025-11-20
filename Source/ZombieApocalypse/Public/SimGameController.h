@@ -18,6 +18,8 @@ class ZOMBIEAPOCALYPSE_API ASimGameController : public AActor
 	/// For handling day advances after real-life seconds defined by SecondsPerDay.
 	FTimerHandle DayTimer;
 	
+	
+
 public:	
 	// Sets default values for this actor's properties
 	ASimGameController();
@@ -38,6 +40,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SpawnEntityAt(FVector Position, bool bSpawnHuman);
 	
+	UFUNCTION(BlueprintCallable)
+	void PauseGame();
+
+	UFUNCTION(BlueprintCallable)
+	void ResumeGame();
+
+	UFUNCTION(BlueprintCallable)
+	void SetGameSpeed(float Multiplier);
+	
+	// --- UPROPERTIES ---
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Setup")
 	ASpawnVolume* SpawnVolumeActor;
 	
@@ -53,10 +66,15 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<AZombie*> ZombieActors;
+	
+	bool bPatientZeroSpawned;
 
 	/// How many real-life seconds pass for a day to be done?
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Simulation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Simulation")
 	float SecondsPerDay = 1.0f;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Simulation")
+	float CurrentGameSpeed = 1.0f;
 	
 	/// How many days (steps) the simulation has completed
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Simulation")
