@@ -24,6 +24,9 @@ public:
 
 protected:
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Game")
+	ASimGameController* GameController;
+	
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	UInputMappingContext* IMC_Player;
 	 
@@ -31,8 +34,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	UInputAction* IA_Leftclick;
 	
+	// Input Action asset reference for escape (pause / unpause)
+	UPROPERTY(EditDefaultsOnly, Category="Input")
+	UInputAction* IA_Escape;
+	
 	void HandleLeftClick(const FInputActionValue& Value);
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Game")
-	ASimGameController* GameController;
+	void HandleEscape();
+	
 };
