@@ -60,8 +60,12 @@ void ASimGameController::SpawnEntityAt(const FVector Position, const bool bSpawn
 	}
 	else if (!bSpawnHuman && ZombieClass)
 	{
-		AZombie* NewZombie = GetWorld()->SpawnActor<AZombie>(ZombieClass, Position, FRotator::ZeroRotator);
-		ZombieActors.Add(NewZombie);
+		if (AZombie* NewZombie = GetWorld()->SpawnActor<AZombie>(ZombieClass, Position, FRotator::ZeroRotator))
+		{
+			NewZombie->SetInitialZombie();
+			Zombies++;
+			ZombieActors.Add(NewZombie);
+		}
 	}
 }
 

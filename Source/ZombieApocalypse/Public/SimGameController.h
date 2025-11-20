@@ -27,9 +27,6 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
-	/// Called when a human is converted
-	void NotifyHumanConverted(AHuman* HumanVictim);
 
 	void AdvanceDay();
 	void StopGame();
@@ -39,6 +36,9 @@ public:
 	/// Spawn a human or zombie at location
 	UFUNCTION(BlueprintCallable)
 	void SpawnEntityAt(FVector Position, bool bSpawnHuman);
+	
+	/// Called when a human is converted
+	void NotifyHumanConverted(AHuman* HumanVictim);
 	
 	UFUNCTION(BlueprintCallable)
 	void PauseGame();
@@ -67,7 +67,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<AZombie*> ZombieActors;
 	
-	bool bPatientZeroSpawned;
+	bool bPatientZeroSpawned = false;
 
 	/// How many real-life seconds pass for a day to be done?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Simulation")
