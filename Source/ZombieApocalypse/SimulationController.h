@@ -53,7 +53,6 @@ protected:
 	virtual void BeginPlay() override;
 	
 public:
-	virtual void Tick(float DeltaTime) override {}
 
 	/// How many steps to run total 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Simulation")
@@ -77,9 +76,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Simulation")
 	float NormalPopulationDensity = 0.1f;
 	
-	/// Maximum capacity of the conveyor (Bitten_Two_capacity in Stella)
+	/// Maximum capacity of the conveyor (Bitten_Two_capacity = 100.f in Stella)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Simulation")
-	float BittenTwoCapacity = 100.f;
+	float BittenTwoCapacity = 100000.f;
 
 	/// ------ SIMULATION STATE VARIABLES (read by the HUD) ------
 	
