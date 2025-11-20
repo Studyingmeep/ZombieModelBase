@@ -6,6 +6,7 @@
 #include "ZombieApocalypse/Public/SimGameController.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Zombie.h"
 #include "Kismet/GameplayStatics.h"
 
 void ACustomPlayerController::BeginPlay()
@@ -53,18 +54,14 @@ void ACustomPlayerController::SetupInputComponent()
 		{
 			// Bind the input action to your handler, trigger on press start
 			EnhancedInput->BindAction(IA_Leftclick, ETriggerEvent::Completed, this, &ACustomPlayerController::HandleLeftClick);
-		}
-
-		if (IA_Escape)
-		{
-			// Bind the input action to your handler, trigger on press start
-			EnhancedInput->BindAction(IA_Escape, ETriggerEvent::Started, this, &ACustomPlayerController::HandleEscape);
+			UE_LOG(LogTemp, Warning, TEXT("Binding IA_Leftclick"));
 		}
 	}
 }
 
 void ACustomPlayerController::HandleLeftClick(const FInputActionValue& Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Left Click!"));
 	// If SimGameController can't be found, return.
 	if (!GameController) return;
 	
@@ -82,6 +79,8 @@ void ACustomPlayerController::HandleLeftClick(const FInputActionValue& Value)
 		return;
 	}
 	
+	UE_LOG(LogTemp, Warning, TEXT("Left Click not handled by HUD!"));
+	
 	// Step 1: Check if the click is on a HUD button; if so, don't spawn zombies
 	FVector2D MousePos;
 	if (!GetMousePosition(MousePos.X, MousePos.Y))
@@ -93,33 +92,37 @@ void ACustomPlayerController::HandleLeftClick(const FInputActionValue& Value)
 	FHitResult Hit;
 	const bool bHit = GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 	 
+	UE_LOG(LogTemp, Warning, TEXT("Mouse click at %s"), *MousePos.ToString());
+	
 	if (bHit && Hit.bBlockingHit)
 	{
-		const FVector ClickLocation = Hit.ImpactPoint;
 		if (!GameController->bPatientZeroSpawned)
 		{
-			GameController->SpawnEntityAt(ClickLocation, false);
+			UE_LOG(LogTemp, Warning, TEXT("Patient Zero Spawned!"));
+			
+			FVector SpawnPos = Hit.ImpactPoint;
+			DrawDebugSphere(GetWorld(), SpawnPos, 25.f, 12, FColor::Green, false, 2.f);
+			
+			FRotator SpawnRotation = FRotator::ZeroRotator;
+	 
+			// Spawn the zombie actor
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+			
+			AActor* NewZombie = GetWorld()->SpawnActor<AActor>(GameController->ZombieClass, SpawnPos, SpawnRotation, SpawnParams);
+			
+			if (NewZombie)
+			{
+				UE_LOG(LogTemp, Log, TEXT("Spawned Zombie at %s"), *SpawnPos.ToString());
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Failed to spawn Zombie!"));
+			}
+			
+			GameController->SpawnEntityAt(Hit.ImpactPoint, false);
+			GameController->bPatientZeroSpawned = true;
 		}
 	}
-}
-
-void ACustomPlayerController::HandleEscape()
-{
-	const bool bPaused = UGameplayStatics::IsGamePaused(this);
-	
-	UGameplayStatics::SetGamePaused(this, !bPaused);
-
-	// Keep IMC active while paused
-	if (!bPaused)
-	{
-		// Game was unpaused -> now paused
-		SetInputMode(FInputModeUIOnly());
-	}
-	else
-	{
-		// Game was paused -> now unpaused
-		SetInputMode(FInputModeGameAndUI());
-	}
-
-	bShowMouseCursor = true;
 }
