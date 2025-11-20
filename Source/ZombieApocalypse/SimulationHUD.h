@@ -6,6 +6,16 @@
 #include "GameFramework/HUD.h"
 #include "SimulationHUD.generated.h"
 
+USTRUCT()
+struct FHUDButton
+{
+	GENERATED_BODY()
+
+	FString Label;
+	FVector2D Position;
+	FVector2D Size;
+};
+
 class ASimGameController;
 class ASimulationController;
 
@@ -19,8 +29,16 @@ class ZOMBIEAPOCALYPSE_API ASimulationHUD : public AHUD
 
 
 public:
+	
 	virtual void BeginPlay() override;
 	virtual void DrawHUD() override;
+	virtual void NotifyHitBoxClick(FName BoxName) override;
+	virtual void NotifyHitBoxRelease(FName BoxName) override;
+	void ResetClickHandling();
+
+	TArray<FHUDButton> Buttons;
+	
+	bool bIsClickHandled = false;
 
 private:
 	
