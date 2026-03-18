@@ -47,6 +47,15 @@ void AZombie::BeginPlay()
 	);
 	
 	GetWorldTimerManager().SetTimer(OldPositionTimerHandle, this, &AZombie::UpdateOldTargetPosition, 3.f, true);
+	GetWorldTimerManager().SetTimer(DebugTargetTimerHandle, this, &AZombie::CallOutTargetDebug, 3.f, true);
+}
+
+void AZombie::CallOutTargetDebug() const
+{
+	if (CurrentTarget.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Zombie %s is targeting human %s!"), *GetName(), *CurrentTarget->GetName());
+	}
 }
 
 // Called every frame
@@ -124,52 +133,28 @@ void AZombie::ScanForHumans()
 	}
 }
 
-AHuman* AZombie::FindClosestHuman(TArray<AActor*>& Humans) const
-{
-	AHuman* Result = nullptr;
-	float BestDist = FLT_MAX;
-
-	FVector MyPos = GetActorLocation();
-
-	for (AActor* A : Humans)
-	{
-		AHuman* H = Cast<AHuman>(A);
-		if (!H || !H->IsAlive() || H->bIsTargeted) continue;
-
-		float Dist = FVector::Distance(MyPos, H->GetActorLocation());
-
-		if (Dist < SearchRadius && Dist < BestDist)
-		{
-			BestDist = Dist;
-			Result = H;
-		}
-	}
-
-	return Result;
-}
-
 AHuman* AZombie::FindClosestHuman(TArray<AHuman*>& Humans) const
 {
 	AHuman* Result = nullptr;
-	float BestDist = FLT_MAX;
+    float BestDist = FLT_MAX;
+    FVector MyPos = GetActorLocation();
 
-	FVector MyPos = GetActorLocation();
+    // Just loop directly through them as Humans!
+    for (AHuman* H : Humans) 
+    {
+       // Now you don't need to cast at all. Just run your flawless safety check:
+       if (!H || !H->IsAlive() || H->bIsBitten) continue;
 
-	for (AActor* A : Humans)
-	{
-		AHuman* H = Cast<AHuman>(A);
-		if (!H || !H->IsAlive() || H->bIsTargeted || H->bIsBitten) continue;
+       float Dist = FVector::Distance(MyPos, H->GetActorLocation());
 
-		float Dist = FVector::Distance(MyPos, H->GetActorLocation());
+       if (Dist < SearchRadius && Dist < BestDist)
+       {
+          BestDist = Dist;
+          Result = H;
+       }
+    }
 
-		if (Dist < SearchRadius && Dist < BestDist)
-		{
-			BestDist = Dist;
-			Result = H;
-		}
-	}
-
-	return Result;
+    return Result;
 }
 
 void AZombie::MoveTowardTarget()
@@ -195,12 +180,14 @@ void AZombie::NotifyActorBeginOverlap(AActor* OtherActor)
 
     if (AHuman* Human = Cast<AHuman>(OtherActor))
     {
-    	UE_LOG(LogTemp, Warning, TEXT("Zombie %s bites human %s!"), *GetName(), *Human->GetName());
 	    if (!Human->IsAlive()) return;
+    	UE_LOG(LogTemp, Warning, TEXT("Zombie %s bites human %s!"), *GetName(), *Human->GetName());
+    	
+    	Human->GetBitten();
         
     	// Clear the target and find a new one on the next scan
     	CurrentTarget = nullptr;
-    	;
+    	
     	FindClosestHuman(GameController->HumanActors);
     }
 }

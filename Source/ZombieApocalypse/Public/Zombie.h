@@ -26,6 +26,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	void CallOutTargetDebug() const;
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void UpdateOldTargetPosition();
@@ -38,6 +39,7 @@ private:
 	TWeakObjectPtr<AHuman> CurrentTarget;
 	
 	FTimerHandle OldPositionTimerHandle;
+	FTimerHandle DebugTargetTimerHandle;
 	FVector PreviousPosition3SecondsAgo;
 
 	// Search radius for detecting humans
