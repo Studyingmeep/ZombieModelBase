@@ -183,6 +183,16 @@ void AZombie::NotifyActorBeginOverlap(AActor* OtherActor)
 {
     Super::NotifyActorBeginOverlap(OtherActor);
 
+	// Did we catch the Top-Down Player?
+	if (OtherActor == UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+	{
+		if (GameController.IsValid())
+		{
+			GameController->PlayerCaught();
+		}
+		return;
+	}
+	
     if (AHuman* Human = Cast<AHuman>(OtherActor))
     {
 	    if (!Human->IsAlive()) return;

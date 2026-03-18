@@ -45,74 +45,113 @@ void AHuman::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// If they are dead or incubating, they shouldn't be walking!
-	if (!bAlive || bIsBitten) return;
+    // If they are dead or incubating, they shouldn't be walking!
+    if (!bAlive || bIsBitten) return;
 
-	const FVector MyLoc = GetActorLocation();
-	FVector FleeDir = FVector::ZeroVector;
-	bool bIsPanicking = false;
+    // --- THE HUMAN MAGNET (Follow Player) ---
+    if (const APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+    {
+       // If the human is within 750 units of the player, they are "Collected"
+       if (FVector::Distance(GetActorLocation(), PlayerPawn->GetActorLocation()) < 550.f)
+       {
+          FVector DirToPlayer = (PlayerPawn->GetActorLocation() - GetActorLocation());
+          DirToPlayer.Z = 0;
+          DirToPlayer.Normalize();
+          
+          // Rotate to face the player!
+          if (!DirToPlayer.IsNearlyZero())
+          {
+              SetActorRotation(DirToPlayer.Rotation());
+          }
+          
+          // Follow the player slightly slower than the player's run speed
+          AddActorWorldOffset(DirToPlayer * 625.f * DeltaTime, true);
+          
+          // IMPORTANT: Return here so they ignore the Zombie panic and Wander logic!
+          return; 
+       }
+    }
+    
+    const FVector MyLoc = GetActorLocation();
+    FVector FleeDir = FVector::ZeroVector;
+    bool bIsPanicking = false;
 
-	// 1. Scan for nearby zombies to run away from
-	// (Make sure GameController and ZombieActors exist/are accessible!)
-	if (GameController)
-	{
-		for (AActor* Actor : GameController->ZombieActors)
-		{
-			if (const AZombie* Z = Cast<AZombie>(Actor))
-			{
-				if (FVector::Distance(MyLoc, Z->GetActorLocation()) < 500.f)
-				{
-					FleeDir += (MyLoc - Z->GetActorLocation());
-					bIsPanicking = true;
-				}
-			}
-		}
-	}
+    // 1. Scan for nearby zombies to run away from
+    if (GameController)
+    {
+       for (AActor* Actor : GameController->ZombieActors)
+       {
+          if (const AZombie* Z = Cast<AZombie>(Actor))
+          {
+             if (FVector::Distance(MyLoc, Z->GetActorLocation()) < 500.f)
+             {
+                FleeDir += (MyLoc - Z->GetActorLocation());
+                bIsPanicking = true;
+             }
+          }
+       }
+    }
 
-	// 2. Choose the movement state
-	if (bIsPanicking)
-	{
-		// Sprint away from the horde
-		FleeDir.Z = 0;
-		FleeDir.Normalize();
-		// 500.f is the speed multiplier. Multiply by DeltaTime so it stays smooth regardless of frame rate!
-		AddActorWorldOffset(FleeDir * 400.f * DeltaTime, true);
-	}
-	else
-	{
-		CurrentWanderTimer -= DeltaTime;
-		if (CurrentWanderTimer <= 0.f)
-		{
-			// Pick a random 2D direction
-			WanderDirection = FVector(FMath::RandRange(-1.f, 1.f), FMath::RandRange(-1.f, 1.f), 0.f);
-			WanderDirection.Normalize();
-			CurrentWanderTimer = FMath::RandRange(MinWanderTimer, MaxWanderTimer);
-		}
+    // 2. Choose the movement state
+    if (bIsPanicking)
+    {
+       // Sprint away from the horde
+       FleeDir.Z = 0;
+       FleeDir.Normalize();
+       
+       // Rotate to face the escape route!
+       if (!FleeDir.IsNearlyZero())
+       {
+           SetActorRotation(FleeDir.Rotation());
+       }
+       
+       // 400.f is the speed multiplier
+       AddActorWorldOffset(FleeDir * 450.f * DeltaTime, true);
+    }
+    else
+    {
+       CurrentWanderTimer -= DeltaTime;
+       if (CurrentWanderTimer <= 0.f)
+       {
+          // Pick a random 2D direction
+          WanderDirection = FVector(FMath::RandRange(-1.f, 1.f), FMath::RandRange(-1.f, 1.f), 0.f);
+          WanderDirection.Normalize();
+          CurrentWanderTimer = FMath::RandRange(MinWanderTimer, MaxWanderTimer);
+       }
+       
+       // 3. The Electric Fence (Check bounds BEFORE we move!)
+       if (GameController && GameController->SpawnVolumeActor)
+       {
+          const FVector Center = GameController->SpawnVolumeActor->GetActorLocation();
+
+          // If they wander more than 3500 units away from the center of the arena...
+          if (FVector::Distance(MyLoc, Center) > 3500.f) 
+          {
+             // Calculate the direction back to the exact center
+             FVector DirectionToCenter = (Center - MyLoc);
+             DirectionToCenter.Z = 0;
+             DirectionToCenter.Normalize();
+          
+             // Override their wander direction so they immediately walk back inside
+             WanderDirection = DirectionToCenter; 
+             
+             // Reset the timer to 1 second so they scatter again after bumping the wall!
+             CurrentWanderTimer = 1.0f;
+          }
+       }
         
-		// 200.f is the slow walking speed. 
-		AddActorWorldOffset(WanderDirection * 200.f * DeltaTime, true);
-		
-		if (GameController && GameController->SpawnVolumeActor)
-		{
-			const FVector Center = GameController->SpawnVolumeActor->GetActorLocation();
-
-			// If they wander more than 1000 units away from the center of the arena...
-			if (const FVector MyCurrentLocation = GetActorLocation(); FVector::Distance(MyCurrentLocation, Center) > 3500.f) 
-			{
-				// Calculate the direction back to the exact center
-				FVector DirectionToCenter = (Center - MyCurrentLocation);
-				DirectionToCenter.Z = 0;
-				DirectionToCenter.Normalize();
-			
-				// Override their wander direction so they immediately walk back inside
-				WanderDirection = DirectionToCenter; 
-				
-				// THE FIX: Reset the timer to 1 second so they scatter again after bumping the wall!
-				CurrentWanderTimer = 1.0f;
-			}
-		}
-	}
+       // Rotate to face the wandering direction!
+       if (!WanderDirection.IsNearlyZero())
+       {
+           SetActorRotation(WanderDirection.Rotation());
+       }
+       
+       // 200.f is the slow walking speed. 
+       AddActorWorldOffset(WanderDirection * WalkingSpeed * DeltaTime, true);
+    }
 	
+	// Fake Gravity: Constantly pull them down! (The floor collision will stop them)
+	AddActorWorldOffset(FVector(0.f, 0.f, -500.f * DeltaTime), true);
 }
 
 void AHuman::GetBitten()

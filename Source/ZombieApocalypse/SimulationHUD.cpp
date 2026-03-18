@@ -29,11 +29,11 @@ void ASimulationHUD::BeginPlay()
 	
 	// BUTTONS (label, position, size)
 	Buttons = {
-	    {"Pause",  FVector2D(50, 300), FVector2D(120, 35)},
-		{"Resume", FVector2D(50, 340), FVector2D(120, 35)},
-		{"1x",     FVector2D(50, 380), FVector2D(120, 35)},
-		{"2x",     FVector2D(50, 420), FVector2D(120, 35)},
-		{"4x",     FVector2D(50, 460), FVector2D(120, 35)},
+	    {"Pause",  FVector2D(50, 340), FVector2D(120, 35)},
+		{"Resume", FVector2D(50, 380), FVector2D(120, 35)},
+		{"1x",     FVector2D(50, 420), FVector2D(120, 35)},
+		{"2x",     FVector2D(50, 460), FVector2D(120, 35)},
+		{"4x",     FVector2D(50, 500), FVector2D(120, 35)},
 	};
 }
 
@@ -61,16 +61,18 @@ void ASimulationHUD::DrawHUD()
 	
     // Multiple lines for better organization
     const FString StepMessage = FString::Printf(TEXT("Day: %d"), SimulationController.IsValid() ? SimulationController->TimeStepsFinished : SimGameController->CurrentDay);
+    const FString RescuedMessage = FString::Printf(TEXT("Rescued: %d"), SimulationController.IsValid() ? static_cast<int>(SimulationController->RescuedHumans) : static_cast<int>(SimGameController->RescuedHumans));
     const FString HumansMessage = FString::Printf(TEXT("Humans: %d"), SimulationController.IsValid() ? static_cast<int>(SimulationController->Susceptible) : static_cast<int>(SimGameController->Susceptible));
     const FString BittenMessage = FString::Printf(TEXT("Bitten: %d"), SimulationController.IsValid() ? static_cast<int>(SimulationController->Bitten) : static_cast<int>(SimGameController->Bitten));
     const FString ZombiesMessage = FString::Printf(TEXT("Zombies: %d"), SimulationController.IsValid() ? static_cast<int>(SimulationController->Zombies) : static_cast<int>(SimGameController->Zombies));
 	const FString SpeedMessage = FString::Printf(TEXT("Current Game Speed: %d"), SimulationController.IsValid() ? 0 : static_cast<int>(SimGameController->CurrentGameSpeed));
 	
     DrawText(StepMessage, TextColor, ScreenPosition.X, ScreenPosition.Y, nullptr, TextScale, true);
-    DrawText(HumansMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 15.0f, nullptr, TextScale, true);
-    DrawText(BittenMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 30.0f, nullptr, TextScale, true);
-    DrawText(ZombiesMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 45.0f, nullptr, TextScale, true);
-	DrawText(SpeedMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 60.0f, nullptr, TextScale, true);
+     DrawText(RescuedMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 15.0f, nullptr, TextScale, true);
+    DrawText(HumansMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 30.0f, nullptr, TextScale, true);
+    DrawText(BittenMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 45.0f, nullptr, TextScale, true);
+    DrawText(ZombiesMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 60.0f, nullptr, TextScale, true);
+	DrawText(SpeedMessage, TextColor, ScreenPosition.X, ScreenPosition.Y + 74.0f, nullptr, TextScale, true);
 	
 	for (int i = 0; i < Buttons.Num(); i++)
 	{
@@ -95,7 +97,7 @@ void ASimulationHUD::DrawHUD()
 	}
 }
 
-void ASimulationHUD::NotifyHitBoxClick(FName BoxName)
+void ASimulationHUD::NotifyHitBoxClick(const FName BoxName)
 {
 	bIsClickHandled = true;
 	
@@ -103,7 +105,7 @@ void ASimulationHUD::NotifyHitBoxClick(FName BoxName)
 	
 	if (!SimGameController.IsValid()) return;
 
-	FString Button = BoxName.ToString();
+	const FString Button = BoxName.ToString();
 
 	if (Button == "Pause")
 	{
@@ -121,13 +123,13 @@ void ASimulationHUD::NotifyHitBoxClick(FName BoxName)
 	{
 		SimGameController->SetGameSpeed(2.0f);
 	}
-	else if (Button == "4x")
+	else if (Button == "3x")
 	{
-		SimGameController->SetGameSpeed(4.0f);
+		SimGameController->SetGameSpeed(3.0f);
 	}
 }
 
-void ASimulationHUD::NotifyHitBoxRelease(FName BoxName)
+void ASimulationHUD::NotifyHitBoxRelease(const FName BoxName)
 {
 	Super::NotifyHitBoxRelease(BoxName);
 	

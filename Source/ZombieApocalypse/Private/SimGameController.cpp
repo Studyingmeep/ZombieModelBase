@@ -74,14 +74,16 @@ void ASimGameController::BeginPlay()
 
 void ASimGameController::SpawnEntityAt(const FVector Position, const bool bSpawnHuman)
 {
+	FVector SafeSpawnPos = Position + FVector(0.f, 0.f, 150.f);
+	
 	if (bSpawnHuman && HumanClass)
 	{
-		AHuman* NewHuman = GetWorld()->SpawnActor<AHuman>(HumanClass, Position, FRotator::ZeroRotator);
+		AHuman* NewHuman = GetWorld()->SpawnActor<AHuman>(HumanClass, SafeSpawnPos, FRotator::ZeroRotator);
 		HumanActors.Add(NewHuman);
 	}
 	else if (!bSpawnHuman && ZombieClass)
 	{
-		if (AZombie* NewZombie = GetWorld()->SpawnActor<AZombie>(ZombieClass, Position + FVector(0, 0, 100), FRotator::ZeroRotator))
+		if (AZombie* NewZombie = GetWorld()->SpawnActor<AZombie>(ZombieClass, SafeSpawnPos + FVector(0, 0, 100), FRotator::ZeroRotator))
 		{
 			NewZombie->SetGameController(this);
 			NewZombie->SetInitialZombie();
@@ -101,7 +103,7 @@ void ASimGameController::ResumeGame()
 	UGameplayStatics::SetGamePaused(this, false);
 }
 
-void ASimGameController::SetGameSpeed(float Multiplier)
+void ASimGameController::SetGameSpeed(const float Multiplier)
 {
 	CurrentGameSpeed = Multiplier;
 	SecondsPerDay = 1.0f / Multiplier;
@@ -161,4 +163,38 @@ void ASimGameController::StopGame()
 	}
 	
 	PauseGame();
+}
+
+void ASimGameController::RescueHuman(AHuman* HumanToRescue)
+{
+	// Double-check that the human is valid and still in the active array
+	if (HumanToRescue && HumanActors.Contains(HumanToRescue))
+	{
+		// 1. Increase the score and reduce humans available!
+		RescuedHumans++;
+		Susceptible--;
+        
+		// 2. Remove them from the simulation math
+		HumanActors.Remove(HumanToRescue);
+        
+		// 3. Delete the actor safely from the world
+		HumanToRescue->Destroy();
+        
+		UE_LOG(LogTemp, Warning, TEXT("Human Rescued! Total Saved: %d"), RescuedHumans);
+		
+		// 4. Check Win Condition
+		if (HumanActors.Num() == 0)
+		{
+			StopGame();
+			UGameplayStatics::SetGamePaused(GetWorld(), true);
+			TriggerEndScreen(true, RescuedHumans); // Pops the Victory UI!
+		}
+	}
+}
+
+void ASimGameController::PlayerCaught()
+{
+	StopGame(); // Pauses the simulation math
+	UGameplayStatics::SetGamePaused(GetWorld(), true); // Freezes the engine
+	TriggerEndScreen(false, RescuedHumans); // Pops the Defeat UI!
 }

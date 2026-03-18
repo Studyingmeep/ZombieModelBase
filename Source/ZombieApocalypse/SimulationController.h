@@ -105,6 +105,10 @@ public:
 	/// Just to check if we are correctly updating stocks - used in SimulationHUD
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Simulation Variables")
 	float Bitten = 0.f;   
+	
+	/// Just to check if we are correctly updating stocks - used in SimulationHUD
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Simulation Variables")
+    int32 RescuedHumans = 0.f;  
 
 	/// ------ OTHER / REMAINING VARIABLES ------
 	

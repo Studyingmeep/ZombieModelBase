@@ -49,6 +49,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetGameSpeed(float Multiplier);
 	
+	// This is the function the SafeZone Blueprint will trigger!
+	UFUNCTION(BlueprintCallable, Category = "Game|Score")
+	void RescueHuman(AHuman* HumanToRescue);
+	
+	// This tells Blueprints to pop the UI on screen!
+	UFUNCTION(BlueprintImplementableEvent, Category = "Game|UI")
+	void TriggerEndScreen(bool bVictory, int32 FinalScore);
+
+	// The zombie will call this when it touches the player
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	void PlayerCaught();
+	
 	// --- UPROPERTIES ---
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Setup")
@@ -66,6 +78,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<AZombie*> ZombieActors;
+	
+	// This tracks the score so your HUD can read it!
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Game|Score")
+	int32 RescuedHumans = 0;
 	
 	bool bPatientZeroSpawned = false;
 
@@ -103,10 +119,5 @@ public:
 	// Enable debug lines between zombie and current target
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Simulation")
 	bool bDebugLinesEnabled = false;
-
-public:
-	
-	
-	
 	
 };
