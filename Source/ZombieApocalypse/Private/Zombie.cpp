@@ -137,7 +137,7 @@ AHuman* AZombie::FindClosestHuman(TArray<AHuman*>& Humans) const
 {
 	AHuman* Result = nullptr;
     float BestDist = FLT_MAX;
-    FVector MyPos = GetActorLocation();
+    const FVector MyPos = GetActorLocation();
 
     // Just loop directly through them as Humans!
     for (AHuman* H : Humans) 
@@ -145,13 +145,18 @@ AHuman* AZombie::FindClosestHuman(TArray<AHuman*>& Humans) const
        // Now you don't need to cast at all. Just run your flawless safety check:
        if (!H || !H->IsAlive() || H->bIsBitten) continue;
 
-       float Dist = FVector::Distance(MyPos, H->GetActorLocation());
+    	// Calculate the actual, true mathematical distance
+    	const float TrueDist = FVector::Distance(MyPos, H->GetActorLocation());
 
-       if (Dist < SearchRadius && Dist < BestDist)
-       {
-          BestDist = Dist;
-          Result = H;
-       }
+    	// Add up to 800 units of "fake" distance to confuse the zombie's brain!
+    	const float PerceivedDist = TrueDist + FMath::RandRange(0.f, 800.f);
+
+    	// Check if their FAKE distance is better than the best distance
+    	if (PerceivedDist < SearchRadius && PerceivedDist < BestDist)
+    	{
+    		BestDist = PerceivedDist; // Save the fuzzy distance
+    		Result = H;               // Target this human!
+    	}
     }
 
     return Result;
