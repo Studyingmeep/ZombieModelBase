@@ -27,8 +27,7 @@ FVector ASpawnVolume::GetRandomPoint() const
 	}
 	
 	// Fallback: use actor bounds (works even if Box is missing)
-	const FBox ActorBox = GetComponentsBoundingBox(true);
-	if (ActorBox.IsValid)
+	if (const FBox ActorBox = GetComponentsBoundingBox(true); ActorBox.IsValid)
 	{
 		return UKismetMathLibrary::RandomPointInBoundingBox(ActorBox.GetCenter(), ActorBox.GetExtent());
 	}
