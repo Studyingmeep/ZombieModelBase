@@ -50,6 +50,8 @@ void AHuman::GetBitten()
 	UE_LOG(LogTemp, Warning, TEXT("Human %s is bitten!"), *GetName());
 	bIsTargeted = false;
 	bIsBitten = true;
+	
+	SetActorEnableCollision(false);
 	ActorCapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TargetArrow->SetVisibility(false);
 	TargetArrow->SetHiddenInGame(true);
@@ -79,14 +81,8 @@ void AHuman::TurnIntoZombie()
 void AHuman::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
-
-	if (Cast<AHuman>(OtherActor))
-	{
-		return;
-	}
-	UE_LOG(LogTemp, Warning, TEXT("Human %s is overlapping with %s inside AHuman:ActorOverlap!"), *GetName(), *OtherActor->GetName());
 	
-	if (bIsBitten) return;
+	if (!Cast<AZombie>(OtherActor) || bIsBitten) return;
 	UE_LOG(LogTemp, Warning, TEXT("Human %s is bitten by %s inside AHuman:ActorOverlap!"), *GetName(), *OtherActor->GetName());
 	GetBitten();
 }
