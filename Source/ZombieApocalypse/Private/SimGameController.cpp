@@ -41,12 +41,33 @@ void ASimGameController::BeginPlay()
 		}
 	}
 
-	// Spawn humans
-	for (int i = 0; i < Susceptible; i++)
+	// Spawn the total population (100 humans + 1 who will become the zombie)
+	for (int i = 0; i < Susceptible + 1; i++) 
 	{
-		FVector Pos = SpawnVolumeActor->GetRandomPoint();
+		const FVector Pos = SpawnVolumeActor->GetRandomPoint();
 		SpawnEntityAt(Pos, true);
 	}
+	
+	// Patient Zero Selection
+	if (HumanActors.Num() > 0)
+	{
+		// 1. Pick a random index from the human array
+		const int32 RandomIndex = FMath::RandRange(0, HumanActors.Num() - 1);
+
+		if (AHuman* UnluckyHuman = Cast<AHuman>(HumanActors[RandomIndex]))
+		{
+			// 2. Save their exact location
+			const FVector PatientZeroLocation = UnluckyHuman->GetActorLocation();
+            
+			// 3. Remove them from the human array and destroy the actor
+			HumanActors.RemoveAt(RandomIndex);
+			UnluckyHuman->Destroy();
+            
+			// 4. Spawn the zombie in that exact spot (SpawnEntityAt handles the Zombie array!)
+			SpawnEntityAt(PatientZeroLocation, false);
+		}
+	}
+	// ------------------------------
 	
 	GetWorldTimerManager().SetTimer(DayTimer, this, &ASimGameController::AdvanceDay, SecondsPerDay, true);
 }
